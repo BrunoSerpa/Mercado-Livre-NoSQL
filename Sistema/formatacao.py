@@ -1,11 +1,11 @@
-def enderecoJson(arquivoJson, comCodigo=False):
+def formatacaoEndereco(arquivoJson, comCodigo=False):
     if comCodigo: print(f'ID: {arquivoJson.id}')
     print(f'{arquivoJson.rua}, {arquivoJson.numero} ({arquivoJson.descricao}) - {arquivoJson.bairro}')
     print(f'CEP: {formatar_cep(arquivoJson.cep)}')
     print(f'{arquivoJson.cidade} - {arquivoJson.estado} ({arquivoJson.pais})')
 
 
-def produtoJson(arquivoJson, vendedor=None, comCodigo=False):
+def formatacaoProduto(arquivoJson, vendedor=None, comCodigo=False):
     if comCodigo: print(f'ID: {arquivoJson.id}')
     print(f'Produto: {arquivoJson.nome_produto}')
     print(f'Valor: R${arquivoJson.valor_produto:.2f}')
@@ -15,17 +15,17 @@ def produtoJson(arquivoJson, vendedor=None, comCodigo=False):
         print(f"CNPJ: {formatar_cnpj(vendedor.cnpj)}")
         print("-----------------------------------------------")
     
-def vendedorJson(arquivoJson, enderecos=[], produtos=[], compras=[], comCodigo=False):
+def formatacaoVendedor(arquivoJson, enderecos=[], produtos=[], compras=[], comCodigo=False):
     if comCodigo: print(f"ID: {arquivoJson.id}")
     print(f"Nome: {arquivoJson.nome_vendedor}")
     print(f"CNPJ: {formatar_cnpj(arquivoJson.cnpj)}")
     print(f"Telefone: {formatar_telefone(arquivoJson.telefone_vendedor)}")
     for endereco in enderecos:
         print("-----------------------------------------------")
-        enderecoJson(endereco)
+        formatacaoEndereco(endereco)
     for produto in produtos:
         print("-----------------------------------------------")
-        produtoJson(produto)
+        formatacaoProduto(produto)
     for compra in compras:
         print("-----------------------------------------------")
         formatacaoCompras(
@@ -38,7 +38,7 @@ def vendedorJson(arquivoJson, enderecos=[], produtos=[], compras=[], comCodigo=F
         )
     if len(enderecos)>0 or len(produtos)>0 or len(compras)>0: print("-----------------------------------------------")
 
-def usuarioJson(arquivoJson, enderecos=[], favoritos=[], compras=[], comCodigo=False):
+def formatacaoUsuario(arquivoJson, enderecos=[], favoritos=[], compras=[], comCodigo=False):
     if comCodigo: print(f"ID: {arquivoJson.id}")
     print(f"Nome: {arquivoJson.nome_usuario}")
     print(f"CPF: {formatar_cpf(arquivoJson.cpf)}")
@@ -64,7 +64,7 @@ def usuarioJson(arquivoJson, enderecos=[], favoritos=[], compras=[], comCodigo=F
         )
     if len(enderecos)>0 or len(favoritos)>0 or len(compras)>0: print("-----------------------------------------------")
 
-def comprasJson(arquivoJson, cliente=None, enderecoCliente=None, vendedor=None, enderecoVendedor=None, produtos=[], comCodigo=False):
+def formatacaoCompras(arquivoJson, cliente=None, enderecoCliente=None, vendedor=None, enderecoVendedor=None, produtos=[], comCodigo=False):
     print(f'Data da Compra: {arquivoJson.data_compra}')
     if cliente:
         print("=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=")
