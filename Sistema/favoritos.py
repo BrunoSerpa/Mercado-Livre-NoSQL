@@ -1,71 +1,69 @@
-from formatacaoJson import produtoJson
-from busca import buscarProduto
-from bson.objectid import ObjectId
+import os
+from busca import buscarProduto, buscarPorId
+from validacoes import obterEntrada, validarId, validarNumero
+from formatacao import formatacaoProduto
 
-def exibirFavoritos(favoritos):
-    if not favoritos:
-        print("Nenhum produto nos favoritos!")
-    else:
-        for favorito in favoritos:
-            print("================================")
-            produtoJson(favorito, False, True)
-        print("================================")
-
-def obterIdProduto(prompt):
-    while True:
-        try:
-            return ObjectId(input(prompt))
-        except Exception as e:
-            print("Erro ao processar a entrada. Certifique-se de inserir um ID válido.")
-            print(e)
-
-def gerenciarFavoritos(favoritos):
-    print("Favoritos Atuais:")
-    exibirFavoritos(favoritos)
-    
-    print('O que deseja fazer com os favoritos?')
-    print('1 - Adicionar um produto')
-    if favoritos:
-        print('2 - Remover um produto')
-    print('0 - Voltar')
-    
-    opcao = input('Insira a opção desejada: ')
-    if opcao == "0": 
-        return favoritos
-    elif opcao == "1": 
-        return adicionarFavorito(favoritos)
-    elif opcao == "2" and favoritos: 
-        return removerFavorito(favoritos)
-    
-    print('Comando incorreto! :(')
-    return favoritos
-
-def adicionarFavorito(favoritos):
-    while True:
-        achouProduto = buscarProduto(input("Insira o nome do produto desejado: "), "nome", True, True)
+def adicionarFavorito(favoritos=set()):
+    produto = None
+    while not produto:
+        achouProduto = buscarProduto(input('Insira o nome do produto desejado: '), 'nome', True, True)
         if not achouProduto:
-            if input("Deseja procurar novamente? (S/N)\n").upper() == 'S':
-                continue
-        elif isinstance(achouProduto, dict):
-            favoritos.append(achouProduto)
-        else:
-            produto = buscarProduto(input("Insira o id do produto desejado: "), "id", False, True)
-            if produto:
-                favoritos.append(produto)
-            else:
-                if input("Deseja procurar novamente? (S/N)\n").upper() == 'S':
-                    continue
-                return favoritos
-        break
+            if input("Deseja procurar novamente? (S/N)\n").upper() != 'S': return favoritos
+        elif not isinstance(achouProduto, dict):
+            id = obterEntrada("Insira o id do produto desejado: ", validarId, "Id Inválido. Certifique-se de inserir o mesmo id mostrado.")
+            produto = buscarProduto(id)
+            if not produto:
+                if input("Deseja procurar novamente? (S/N)\n").upper() != 'S': return favoritos
+        else: produto = achouProduto
+    if produto.id in favoritos: print("Este produto já está favoritado!")
+    else:
+        favoritos.add(produto.id)
+        print("Produto favoritado com sucesso")
     return favoritos
 
-def removerFavorito(favoritos):
-    exibirFavoritos(favoritos)
-    idProduto = obterIdProduto("Insira o ID do produto desejado para remoção: ")
-    for favorito in favoritos:
-        if favorito["_id"] == idProduto:
-            favoritos.remove(favorito)
-            print("Produto removido com sucesso da lista de favoritos.")
-            return favoritos
-    print("O ID inserido não corresponde a nenhum produto na lista de favoritos.")
+def removerFavorito(favoritos=set()):
+    os.system('cls')
+    for i, idFavorito in enumerate(favoritos):
+        favorito = buscarPorId("produtos", idFavorito)
+        vendedor = buscarPorId("vendedores", favorito.id_vendedor)
+        print(f'{i + 1}º Favorito:')
+        print("--------------------------------")
+        formatacaoProduto(favorito, vendedor)
+        print("--------------------------------")
+    posicao = obterEntrada("Insira a posição do favorito: ", validarNumero, "Posição inválida. Deve conter apenas dígitos numéricos.") - 1
+    if posicao < len(favoritos) and posicao >= 0:
+        favorito_remover = list(favoritos)[posicao]
+        favoritos.remove(favorito_remover)
+        print("Favorito removido com sucesso")
+    else: print("A posição fornecida não corresponde a nenhum favorito!")
+    return favoritos
+
+def gerenciarFavoritos(favoritos=set()):
+    print("Favoritos Atuais:")
+    temFavoritos = len(favoritos) > 0
+    if not temFavoritos: print("Nenhum Favorito cadastrado!")
+    for i, idFavorito in enumerate(favoritos):
+        favorito = buscarPorId("produtos", idFavorito)
+        if favorito:
+            vendedor = buscarPorId("vendedores", favorito.id_vendedor)
+            print(f'{i + 1}º Favorito:')
+            print("--------------------------------")
+            formatacaoProduto(favorito, vendedor)
+            print("--------------------------------")
+        else:
+            favoritos.remove(idFavorito)
+            continue
+    print("================================")
+    print('O que deseja fazer com os favoritos?')
+    print("--------------------------------")
+    print('1 - Adicionar um produto')
+    if temFavoritos: print('2 - Remover um produto')
+    print("--------------------------------")
+    print('0 - Voltar')
+    print("================================") 
+   
+    opcao = obterEntrada("Insira a opção desejada: ", validarNumero, "Opção inválida. Deve conter apenas dígitos numéricos.")
+    if opcao == "1": favoritos = adicionarFavorito(favoritos)
+    elif opcao == "2" and temFavoritos: favoritos = removerFavorito(favoritos)
+    elif opcao != "0": print('Comando incorreto! :(')
     return favoritos
