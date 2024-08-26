@@ -1,166 +1,132 @@
-from datetime import datetime
 import os
-from busca import buscarCompra
-from conexaoMongo import conectar
-from validacoes import validarNaoVazio, validarNumero
-from busca import buscarUsuario, buscarVendedor
-from formatacaoJson import produtoJson, enderecoJson
-compras = conectar().Compras
-vendedores = conectar().Vendedor
-usuarios = conectar().Usuario
+from busca import buscarCompra, buscarUsuario, buscarProduto, buscarVendedor, buscarPorId
+from formatacao import formatacaoEndereco, formatacaoProduto
+from validacoes import obterEntrada
+from datetime import datetime
+from uuid import uuid4
+from conexaoCassandra import cadastrarRegistro, atualizarRegistro, deletarRegistro
 
-def obterEntrada(mensagem, validacao, erroMensagem):
-    while True:
-        entrada = input(mensagem)
-        if not validacao(entrada): print(erroMensagem)
-        else: return entrada
-
-def fazerCompra(cliente=None):
+def fazerCompra(sessao, cliente=None):
     os.system('cls')
     print("Fazendo compras...")
     while not cliente:
-        achouUsuario = buscarUsuario(input('Insira o nome do cliente: '), 'nome', True)
-        if isinstance(achouUsuario, dict): cliente = achouUsuario
-        elif not achouUsuario:
+        achouCliente = buscarUsuario(input('Insira o nome do cliente desejado: '), 'nome', True)
+        if not achouCliente:
             if input("Deseja procurar novamente? (S/N)\n").upper() != 'S': return
-        else:
-            cliente = buscarUsuario(input('Insira o id do cliente: '), 'id', False)
+        elif not isinstance(achouCliente, dict):
+            id = obterEntrada("Insira o id do usuário desejado: ", "validarId", "Id Inválido. Certifique-se de inserir o mesmo id mostrado.")
+            cliente = buscarUsuario(id)
             if not cliente:
                 if input("Deseja procurar novamente? (S/N)\n").upper() != 'S': return
-    
-    if not cliente.get("enderecos"):
+        else: cliente = achouCliente
+
+    enderecoCliente = None
+    quantEndCli = len(cliente.enderecos)
+    if quantEndCli == 0:
         print("Cadastre um endereço no cliente antes de fazer uma compra!")
         return
-    enderecosCliente = cliente["enderecos"]
-    enderecoCliente = None
-    if len(enderecosCliente) > 1:
+    elif quantEndCli > 1:
         while not enderecoCliente:
             print("Para onde devemos enviar o produto?")
-            for endereco in enderecosCliente:
-                print("================================")
-                print(f'Código Endereço: {endereco["cod_endereco"]}')
-                enderecoJson(endereco)
-            print("================================\n")
-            codigoEndereco = obterEntrada("Insira o código do endereço: ", validarNumero, "Número inválido. Deve conter apenas dígitos numéricos.")
-            for i, endereco in enumerate(enderecosCliente):
-                if endereco["cod_endereco"] == int(codigoEndereco):
-                    enderecoCliente = endereco
-                    break
-            if not enderecoCliente:
+            for i, idEndereco in enumerate(cliente.enderecos):
+                print(f'{i + 1}º Endereço:')
+                print("--------------------------------")
+                endereco = buscarPorId("enderecos", idEndereco)
+                formatacaoEndereco(endereco)
+                print("--------------------------------")
+            posicao = obterEntrada("Insira a posição do endereço a ser enviado: ", "validarNumero", "Posição inválida. Deve conter apenas dígitos numéricos.") - 1
+            if posicao < len(cliente.enderecos) and posicao >= 0: enderecoCliente = list(cliente.enderecos)[posicao]
+            else:
+                print("A posição fornecida não corresponde a nenhum endereço!")
                 if input("Deseja procurar novamente? (S/N)\n").upper() != 'S': return
-                else: continue
-            break
-    else:
-        enderecoCliente = enderecosCliente[0]
-    vendedor = None
+    else: enderecoCliente = list(cliente.enderecos)[0]
 
+    vendedor = None
     while not vendedor:
-        achouVendedor = buscarVendedor(input('Insira o nome do vendedor: '), 'nome', True)
-        if isinstance(achouVendedor, dict): vendedor = achouVendedor
-        elif not achouVendedor:
+        achouVendedor = buscarVendedor(input('Insira o nome do vendedor desejado: '), 'nome', True)
+        if not achouVendedor:
             if input("Deseja procurar novamente? (S/N)\n").upper() != 'S': return
-        else:
-            vendedor = buscarVendedor(input('Insira o id do vendedor: '), 'id', False)
+        elif not isinstance(achouVendedor, dict):
+            id = obterEntrada("Insira o id do vendedor desejado: ", "validarId", "Id Inválido. Certifique-se de inserir o mesmo id mostrado.")
+            vendedor = buscarVendedor(id)
             if not vendedor:
                 if input("Deseja procurar novamente? (S/N)\n").upper() != 'S': return
+        else: vendedor = achouVendedor
 
-    if not vendedor.get("enderecos"):
-        print("Cadastre pelo menos um endereço no vendedor antes de fazer uma compra!")
-        return
-    enderecosVendedor = vendedor["enderecos"]
     enderecoVendedor = None
-    if len(enderecosVendedor) > 1:
+    quantEndVen = len(vendedor.enderecos)
+    if quantEndVen == 0:
+        print("Cadastre um endereço no vendedor antes de fazer uma compra!")
+        return
+    elif quantEndVen > 1:
         while not enderecoVendedor:
-            print("De onde será enviado o produto?")
-            for endereco in enderecosVendedor:
-                print("================================")
-                print(f'Código Endereço: {endereco["cod_endereco"]}')
-                enderecoJson(endereco)
-            print("================================\n")
-            codigoEndereco = obterEntrada("Insira o código do endereço: ", validarNumero, "Número inválido. Deve conter apenas dígitos numéricos.")
-            for i, endereco in enumerate(enderecosVendedor):
-                if endereco["cod_endereco"] == int(codigoEndereco):
-                    enderecoVendedor = endereco
-                    break
-            if not enderecoVendedor:
+            print("De onde devemos enviar os produtos?")
+            for i, idEndereco in enumerate(vendedor.enderecos):
+                print(f'{i + 1}º Endereço:')
+                print("--------------------------------")
+                endereco = buscarPorId("enderecos", idEndereco)
+                formatacaoEndereco(endereco)
+                print("--------------------------------")
+            posicao = obterEntrada("Insira a posição do endereço a ser retirado: ", "validarNumero", "Posição inválida. Deve conter apenas dígitos numéricos.") - 1
+            if posicao < len(vendedor.enderecos) and posicao >= 0: enderecoVendedor = list(vendedor.enderecos)[posicao]
+            else:
+                print("A posição fornecida não corresponde a nenhum endereço!")
                 if input("Deseja procurar novamente? (S/N)\n").upper() != 'S': return
-                else: continue
-            break
-    else:
-        enderecoVendedor = enderecosVendedor[0]
-    produtosVendedor = vendedor.get("produtos", [])
-    produtos = []
+    else: enderecoVendedor = list(vendedor.enderecos)[0]
+
+    produtosVendedor = vendedor.produtos
+    quantProVen = len(produtosVendedor)
+    produtos = set()
     valorTotal = 0
-    if len(produtosVendedor) > 1:
-        while len(produtosVendedor) > 1:
-            os.system('cls')
-            print("Escolha os produtos a serem comprados:")
-            for i, produto in enumerate(produtosVendedor, start=1):
-                print(f"{i} - Produto {i}:")
-                produtoJson(produto)
-                print("---------------------------")        
-            posicao = obterEntrada("Insira a posição do produto desejado: ", validarNumero, "Insira um número válido para a posição do produto!")
-            posicao = int(posicao)
-            if 1 <= posicao <= len(produtosVendedor):
-                produtoEscolhido = produtosVendedor[posicao - 1]
-                produtos.append(produtoEscolhido)
-                produtosVendedor.remove(produtoEscolhido)
-                valorTotal += produtoEscolhido["valor_produto"]
+    if quantProVen == 0:
+        print("Cadastre um produto no vendedor antes de fazer uma compra!")
+        return
+    elif quantProVen > 1:
+        while quantProVen > len(produtos):
+            precos = []
+            print("Escolha o produto a ser comprado")
+            for i, idProduto in enumerate(produtosVendedor):
+                print(f'{i + 1}º produto:')
+                print("--------------------------------")
+                produto = buscarPorId("produtos", idProduto)
+                formatacaoProduto(produto)
+                precos.append(produto.valor_produto)
+                print("--------------------------------")
+            posicao = obterEntrada("Insira a posição do produto a ser comprado: ", "validarNumero", "Posição inválida. Deve conter apenas dígitos numéricos.") - 1
+            if posicao < len(produtosVendedor) and posicao >= 0:
+                produtoComprado = list(produtosVendedor)[posicao]
+                produtos.add(produtoComprado)
+                produtosVendedor.remove(produtoComprado)
+                valorTotal += precos[posicao]
                 if len(produtosVendedor) == 1:
                     if input("Deseja comprar o último produto? (S/N)\n").upper() == 'S':
-                        produtoEscolhido = produtosVendedor[0]
-                        produtos.append(produtoEscolhido)
-                        produtosVendedor.remove(produtoEscolhido)
-                        valorTotal += produtoEscolhido["valor_produto"]
-                        break
-                if input("Deseja comprar mais algum produto? (S/N)\n").upper() != 'S': break
+                        produtoComprado = list(produtosVendedor)[0]
+                        produtos.add(produtoComprado)
+                        produtosVendedor.remove(produtoComprado)
+                        valorTotal += precos[0]
             else:
-                print("Posição de produto inválida!")
-    elif len(produtosVendedor) == 1:
-        produtos.append(produtosVendedor[0])
-        valorTotal = produtosVendedor[0]["valor_produto"]
+                print("A posição fornecida não corresponde a nenhum produto!")
+                if input("Deseja procurar novamente? (S/N)\n").upper() != 'S': return
     else:
-        print("Cadastre pelo menos um produto no vendedor antes de fazer uma compra!")
-        return
-    codCliente = cliente["_id"]
-    nomeCliente = cliente["nome_usuario"]
-    cpf = cliente["cpf"]
-    codVendedor = vendedor["_id"]
-    nomeVendedor = vendedor["nome_vendedor"]
-    cnpj = vendedor["cnpj"]
-    compra = {
-        "data_compra": datetime.utcnow(),
-        "cod_cliente": codCliente,
-        "nome_cliente": nomeCliente,
-        "cpf": cpf,
-        "endereco_cliente": enderecoCliente,
-        "cod_vendedor": codVendedor,
-        "nome_vendedor": nomeVendedor,
-        "cnpj": cnpj,
-        "endereco_vendedor": enderecoVendedor,
-        "produtos": produtos,
-        "valor_total": valorTotal
-    }
-    try:
-        compras.insert_one(compra)
-        usuarios.update_one(
-            {"_id": codCliente},
-            {"$push": {"compras": compra}}
-        )
-        vendedores.update_one(
-            {"_id": codVendedor},
-            {"$push": {"vendas": compra}}
-        )
-        for produto in produtos:
-            vendedores.update_one(
-                {"_id": codVendedor},
-                {"$pull": {"produtos": {"_id": produto["_id"]}}}
-            )        
-        print("Compra realizada com sucesso!")
-    except Exception as e:
-        print(f"Erro ao realizar a compra: {e}")
-        return
-    return compra
+        idProduto = list(vendedor.produtos)[0]
+        produtos.add(idProduto)
+        produto = buscarPorId("produtos", idProduto)
+        valorTotal = produto.valor_produto
+
+    tiposDados = ["data_compra", "id_cliente", "endereco_cliente", "id_vendedor", "endereco_vendedor", "produtos", "valor_total"]
+    compra = [datetime.utcnow(), cliente.id, enderecoCliente, vendedor.id, enderecoVendedor, list(produtos), valorTotal]
+    idCompra = uuid4()
+    cliente.compras.add(idCompra)
+    vendedor.vendas.add(idCompra)
+    vendedor.produtos = set(produtosVendedor)
+
+    if not cadastrarRegistro(sessao, "compras", tiposDados, compra, idCompra): return
+    if not atualizarRegistro(sessao, "usuarios", "compras", cliente.compras, cliente.id): return
+    if not atualizarRegistro(sessao, "vendedores", "vendas", vendedor.vendas, vendedor.id): return
+    if not atualizarRegistro(sessao, "vendedores", "produtos", vendedor.produtos, vendedor.id): return
+
+    print("Compra realizada com sucesso!")
+
 def listarCompras():
     os.system('cls')
     print("Listando compras...")
@@ -188,3 +154,29 @@ def listarVendas():
     else:
         print('Vendas Existentes:')
         buscarCompra('', 'nome_vendedor', False)
+
+def excluirCompra(sessao, compra=None):
+    while not compra:
+        achouCompra = buscarCompra(input('Insira o nome do cliente que fez a compra desejada: '), 'nome_cliente', True)
+        if not achouCompra:
+            if input("Deseja procurar novamente? (S/N)\n").upper() != 'S': return
+        elif not isinstance(achouCompra, dict):
+            id = obterEntrada("Insira o id da compra desejada: ", "validarId", "Id Inválido. Certifique-se de inserir o mesmo id mostrado.")
+            compra = buscarCompra(id)
+        if not compra:
+            if input("Deseja procurar novamente? (S/N)\n").upper() != 'S': return
+        else: compra = achouCompra
+
+    cliente = buscarPorId("usuarios", compra.id_cliente)
+    cliente.compras.remove(compra.id)
+
+    vendedor = buscarPorId("vendedores", compra.id_vendedor)
+    vendedor.vendas.remove(compra.id)
+    vendedor.produtos.update(compra.produtos)
+
+    if not deletarRegistro(sessao, "compras", compra.id): return
+    if not atualizarRegistro(sessao, "usuarios", "compras", cliente.compras, cliente.id): return
+    if not atualizarRegistro(sessao, "vendedores", "vendas", vendedor.vendas, vendedor.id): return
+    if not atualizarRegistro(sessao, "vendedores", "produtos", vendedor.produtos, vendedor.id): return
+
+    print("Compra excluída com sucesso!")

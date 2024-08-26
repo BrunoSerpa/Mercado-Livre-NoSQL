@@ -1,7 +1,7 @@
 import os
 from busca import buscarProduto, buscarPorId
-from validacoes import obterEntrada, validarId, validarNumero
-from formatacao import formatacaoProduto
+from validacoes import obterEntrada
+from formatacao import formatacaoProduto, formatarSeparador1
 
 def adicionarFavorito(favoritos=set()):
     produto = None
@@ -9,8 +9,8 @@ def adicionarFavorito(favoritos=set()):
         achouProduto = buscarProduto(input('Insira o nome do produto desejado: '), 'nome', True, True)
         if not achouProduto:
             if input("Deseja procurar novamente? (S/N)\n").upper() != 'S': return favoritos
-        elif not isinstance(achouProduto, dict):
-            id = obterEntrada("Insira o id do produto desejado: ", validarId, "Id Inválido. Certifique-se de inserir o mesmo id mostrado.")
+        elif isinstance(achouProduto, list):
+            id = obterEntrada("Insira o id do produto desejado: ", "validarId", "Id Inválido. Certifique-se de inserir o mesmo id mostrado.")
             produto = buscarProduto(id)
             if not produto:
                 if input("Deseja procurar novamente? (S/N)\n").upper() != 'S': return favoritos
@@ -21,16 +21,27 @@ def adicionarFavorito(favoritos=set()):
         print("Produto favoritado com sucesso")
     return favoritos
 
+
 def removerFavorito(favoritos=set()):
     os.system('cls')
     for i, idFavorito in enumerate(favoritos):
         favorito = buscarPorId("produtos", idFavorito)
+        if not favorito:
+            print(f"Produto com id {idFavorito} não encontrado.")
+            continue
         vendedor = buscarPorId("vendedores", favorito.id_vendedor)
         print(f'{i + 1}º Favorito:')
-        print("--------------------------------")
+        formatarSeparador1()
         formatacaoProduto(favorito, vendedor)
-        print("--------------------------------")
-    posicao = obterEntrada("Insira a posição do favorito: ", validarNumero, "Posição inválida. Deve conter apenas dígitos numéricos.") - 1
+        formatarSeparador1()
+    posicao = obterEntrada("Insira a posição do favorito: ", "validarNumero", "Posição inválida. Deve conter apenas dígitos numéricos.") - 1
+    if posicao < len(favoritos) and posicao >= 0:
+        favorito_remover = list(favoritos)[posicao]
+        favoritos.remove(favorito_remover)
+        print("Favorito removido com sucesso")
+    else: print("A posição fornecida não corresponde a nenhum favorito!")
+    return favoritos
+
     if posicao < len(favoritos) and posicao >= 0:
         favorito_remover = list(favoritos)[posicao]
         favoritos.remove(favorito_remover)
@@ -62,7 +73,7 @@ def gerenciarFavoritos(favoritos=set()):
     print('0 - Voltar')
     print("================================") 
    
-    opcao = obterEntrada("Insira a opção desejada: ", validarNumero, "Opção inválida. Deve conter apenas dígitos numéricos.")
+    opcao = obterEntrada("Insira a opção desejada: ", "validarNumero", "Opção inválida. Deve conter apenas dígitos numéricos.")
     if opcao == "1": favoritos = adicionarFavorito(favoritos)
     elif opcao == "2" and temFavoritos: favoritos = removerFavorito(favoritos)
     elif opcao != "0": print('Comando incorreto! :(')

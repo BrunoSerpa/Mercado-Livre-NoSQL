@@ -1,2 +1,4 @@
-Sistema/conexaoMongo.py
+Sistema/conexaoCassandra.py
+token.json
+secureConnect.zip
 __pycache__/

@@ -35,7 +35,6 @@ def menuUsuario():
         {"descricao": "Deletar usuario", "acao": deletarUsuario}
     ]
     exibirMenu(opcoes, "Gerenciar Usuários")
-
 def menuVendedor():
     opcoes = [
         {"descricao": "Cadastar vendedor", "acao": cadastrarVendedor},
@@ -53,7 +52,6 @@ def menuProduto():
         {"descricao": "Deletar produto", "acao": deletarProduto}
     ]
     exibirMenu(opcoes, "Gerenciar Produtos")
-
 def menuCompra():
     opcoes = [
         {"descricao": "Cadastar compra", "acao": fazerCompra},
@@ -72,3 +70,52 @@ def home():
     exibirMenu(opcoes, "Menu Principal")
 
 if __name__ == "__main__": home()
+
+"""
+Pedro Augusto
+81529627087
+pedro@augusto.com
+12997206478
+12226660
+Brasil
+SP
+São José dos Campos
+Campos de São José
+Rua Álvaro Pinheiro Mendonça
+12
+Casa
+S
+12248200
+Brasil
+SP
+São José dos Campos
+Jardim Santa Inês I
+Avenida Professor Milton Santos
+40
+Loja
+N
+
+Pietra Augusta
+97453745000148
+pietra@augusta.com
+2832443280
+12211810
+Brasil
+SP
+São José dos Campos
+Santana
+Rua Manoel Ramos Machado
+32
+Loja
+N
+S
+Carregar do Iphone
+70.00
+S
+Carregar de Xiaomi
+30.00
+S
+J4 PLUS
+760.00
+N
+"""

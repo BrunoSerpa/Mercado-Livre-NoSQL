@@ -1,5 +1,5 @@
-from validacoes import obterEntrada, validarNaoVazio, validarNumero,validarCEP
-from formatacao import formatacaoEndereco
+from validacoes import obterEntrada
+from formatacao import formatacaoEndereco, formatarSeparador3, formatarSeparador1
 from conexaoCassandra import cadastrarRegistro, atualizarRegistro, deletarRegistro
 from uuid import uuid4
 import os
@@ -7,14 +7,14 @@ from busca import buscarPorId
 
 
 def obterEndereco():
-    cep = obterEntrada("Insira o CEP: ", validarCEP, "CEP inválido. Deve conter 8 dígitos numéricos.")
-    pais = obterEntrada("Insira o país: ", validarNaoVazio, "País não pode estar em branco.")
-    estado = obterEntrada("Insira o estado: ", validarNaoVazio, "Estado não pode estar em branco.")
-    cidade = obterEntrada("Insira a cidade: ", validarNaoVazio, "Cidade não pode estar em branco.")
-    bairro = obterEntrada("Insira o bairro: ", validarNaoVazio, "Bairro não pode estar em branco.")
-    rua = obterEntrada("Insira a rua: ", validarNaoVazio, "Rua não pode estar em branco.")
-    numero = obterEntrada("Insira o número: ", validarNumero, "Número inválido. Deve conter apenas dígitos numéricos.")
-    descricao = obterEntrada("Insira a descrição: ", validarNaoVazio, "Descrição não pode estar em branco.")
+    cep = obterEntrada("Insira o CEP: ", "validarCEP", "CEP inválido. Deve conter 8 dígitos numéricos.")
+    pais = obterEntrada("Insira o país: ", "validarNaoVazio", "País não pode estar em branco.")
+    estado = obterEntrada("Insira o estado: ", "validarNaoVazio", "Estado não pode estar em branco.")
+    cidade = obterEntrada("Insira a cidade: ", "validarNaoVazio", "Cidade não pode estar em branco.")
+    bairro = obterEntrada("Insira o bairro: ", "validarNaoVazio", "Bairro não pode estar em branco.")
+    rua = obterEntrada("Insira a rua: ", "validarNaoVazio", "Rua não pode estar em branco.")
+    numero = obterEntrada("Insira o número: ", "validarNumero", "Número inválido. Deve conter apenas dígitos numéricos.")
+    descricao = obterEntrada("Insira a descrição: ", "validarNaoVazio", "Descrição não pode estar em branco.")
     endereco = [cep, pais, estado, cidade, bairro, rua, numero, descricao]
     return endereco
 
@@ -38,11 +38,11 @@ def editarEndereco(sessao, enderecos=set()):
     os.system('cls')
     for i, idEndereco in enumerate(enderecos):
         print(f'{i + 1}º Endereço:')
-        print("--------------------------------")
+        formatarSeparador1()
         endereco = buscarPorId("enderecos", idEndereco)
         formatacaoEndereco(endereco)
-        print("--------------------------------")
-    posicao = obterEntrada("Insira a posição do endereço a ser editado: ", validarNumero, "Posição inválida. Deve conter apenas dígitos numéricos.") - 1
+        formatarSeparador1()
+    posicao = obterEntrada("Insira a posição do endereço a ser editado: ", "validarNumero", "Posição inválida. Deve conter apenas dígitos numéricos.") - 1
     if posicao < len(enderecos) and posicao >= 0:
         endereco_editar = list(enderecos)[posicao]
         tiposDados = ["cep", "pais", "estado", "cidade", "bairro", "rua", "numero", "descricao"]
@@ -55,11 +55,11 @@ def excluirEndereco(sessao, enderecos=set()):
     os.system('cls')
     for i, idEndereco in enumerate(enderecos):
         print(f'{i + 1}º Endereço:')
-        print("--------------------------------")
+        formatarSeparador1()
         endereco = buscarPorId("enderecos", idEndereco)
         formatacaoEndereco(endereco)
-        print("--------------------------------")
-    posicao = obterEntrada("Insira a posição do endereço: ", validarNumero, "Posição inválida. Deve conter apenas dígitos numéricos.") - 1
+        formatarSeparador1()
+    posicao = obterEntrada("Insira a posição do endereço: ", "validarNumero", "Posição inválida. Deve conter apenas dígitos numéricos.") - 1
     if posicao < len(enderecos) and posicao >= 0:
         endereco_excluir = list(enderecos)[posicao]
         if deletarRegistro(sessao, "enderecos", endereco_excluir):
@@ -71,27 +71,27 @@ def excluirEndereco(sessao, enderecos=set()):
 def gerenciarEnderecos(sessao, enderecos=set()):
     print("Endereços Atuais:")
     temEnderecos = len(enderecos) > 0
-    if temEnderecos:
-        print("Nenhum endereço cadastrado!")
-    for i, idEndereco in enumerate(enderecos):
-        print(f'{i + 1}º Endereço:')
-        print("--------------------------------")
-        endereco = buscarPorId("enderecos", idEndereco)
-        formatacaoEndereco(endereco)
-        print("--------------------------------")
+    if not temEnderecos: print("Nenhum endereço cadastrado!")
+    else:
+        for i, idEndereco in enumerate(enderecos):
+            print(f'{i + 1}º Endereço:')
+            formatarSeparador1()
+            endereco = buscarPorId("enderecos", idEndereco)
+            formatacaoEndereco(endereco)
+            formatarSeparador1()
 
-    print("================================")
+    formatarSeparador3()
     print('O que deseja fazer com os endereços?')
-    print("--------------------------------")
+    formatarSeparador1()
     print('1 - Criar um novo endereço')
     if temEnderecos:
         print('2 - Editar um endereço existente')
         print('3 - Deletar um endereço existente')
-    print("--------------------------------")
+    formatarSeparador1()
     print('0 - Voltar')
-    print("================================")
+    formatarSeparador3()
 
-    opcao = obterEntrada("Insira a opção desejada: ", validarNumero, "Opção inválida. Deve conter apenas dígitos numéricos.")
+    opcao = obterEntrada("Insira a opção desejada: ", "validarNumero", "Opção inválida. Deve conter apenas dígitos numéricos.")
     if opcao == "1": enderecos.add(cadastrarEndereco(sessao))
     elif opcao == "2" and temEnderecos: editarEndereco(enderecos)
     elif opcao == "3" and temEnderecos: enderecos = excluirEndereco(sessao, enderecos)
